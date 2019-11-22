@@ -2,3 +2,4 @@ mnist/
 */**/__pychace__
 checkpoints/
 *.pyc
+util/*png
