@@ -1,1 +1,3 @@
 ./mnist
+./checkpoints/*
+**/__pychace__/
