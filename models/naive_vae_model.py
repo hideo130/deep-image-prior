@@ -28,6 +28,7 @@ class NaiveVaeModel(BaseModel):
             self.optimizer = torch.optim.Adam(self.netVAE.parameters(), lr=opt.lr, betas=(0.5, 0.999))
             self.optimizers.append(self.optimizer)
             self.criterionBCE = nn.BCELoss(reduction="mean")
+
     def set_input(self, input):
         self.input = input.to(self.device)
 

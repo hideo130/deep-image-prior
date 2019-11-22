@@ -67,8 +67,8 @@ class naive_VAE(nn.Module):
         # -1なんで必要
         # mu, logvar = self.encode(x.view(-1, 784))
         mu, logvar = self.encode(x.view(-1, 784))
-        z = self.reparameterize(mu, logvar)
-        return self.decode(z), mu, logvar
+        self.z = self.reparameterize(mu, logvar)
+        return self.decode(self.z), mu, logvar
 
 
 

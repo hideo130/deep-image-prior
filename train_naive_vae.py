@@ -53,7 +53,6 @@ if __name__ == "__main__":
         torch.cuda.set_device(opt.gpu_ids[0])
 
     model = NaiveVaeModel(opt)
-     
     dataset_size = len(dataset_train)    # get the number of images in the dataset.
     print('The number of training images = %d' % dataset_size)
     for epoch in range(100):
@@ -69,7 +68,7 @@ if __name__ == "__main__":
 
         # model.concat_and_save_loss_end_epoch(epoch)
         # model.update_learning_rate()
-        if (epoch + 1) % 20 == 0: 
+        if (epoch + 1) % 20 == 0:
             model.save_networks(epoch)
 
 
