@@ -3,3 +3,4 @@ mnist/
 checkpoints/
 *.pyc
 util/*png
+.vscode/*
