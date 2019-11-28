@@ -16,6 +16,71 @@ class UNITModel(BaseModel):
 
         # if self.isTrain and self.opt.lambda_identity > 0.0
         #     visual_names_A.append('idt_A')
+        
+
+
+class UNIT(nn.Module):
+    def __init__(self, opt):
+
+        super(UNIT, self).__init__()
+        # self.vae_a = vaeGenerator()
+        # self.
+        self.enc1 = MakeEncoder()
+        self.enc2 = MakeEncoder()
+        self.share_enc = ResnetBlock()
+        self.share_dec = ResnetBlock()
+        self.dec1 = make_encoder()
+        self.dec2 = make_encoder()
+        
+
+    def forward(self, x):
+        x = self.enc(x)
+
+class Conv2dBlock(nn.Module):
+    def __init__(self, input_dim, output_dim, kernel_size, stride, padding, pad_type="zero", norm="bn",activation="lrelu"):
+        super(Conv2dBlock, self).__init__()
+        self.conv_block = []
+        self.use_bias = True
+       if pad_type == 'reflect':
+            conv_block += [nn.ReflectionPad2d(padding)]
+        elif pad_type == 'replicate':
+            conv_block += [nn.ReplicationPad2d(padding)]
+        elif pad_type == 'zero':
+            conv_block += [nn.ZeroPad2d(padding)]
+        else:
+            raise NotImplementedError(
+                'Padding [%s] is not implemented.' % pad_type)
+        conv_block += [nn.Conv2d(input_dim, output_dim, kernel_size, stride, bias=self.use_bias)]
+
+        if norm == "bn":
+            conv_block += [nn.BatchNorm2d(output_dim)]
+        elif norm == "instance":
+            conv_block += [nn.InstanceNorm2d(output_dim)]
+        elif norm == "sepctral":
+            "Implement later"
+            pass
+        elif norm == "none":
+            conv_block = conv_block
+        else:
+            raise NotImplementedError(
+            "Normalization layer [%s] is not implemented." % norm)
+        
+        if activation=="lrelu":
+            conv_block += nn.LeakyReLU(0.2, inplace=True)
+        else activation=="tanh":
+            conv_block += nn.Tanh()
+        else activation=="none"
+            conv_block = conv_block
+        else:
+            raise NotImplementedError(
+        "Activation [%s] is not implemented." % activation)
+
+        self.model = nn.Sequential(*conv_block)
+
+    def forward(self, x):
+        return self.model(x)
+
+
 
 
 class VAE(nn.Module):
@@ -27,16 +92,30 @@ class VAE(nn.Module):
         pass
 
 
-class generateEndcoder(nn.Module):
-    def __init__(self, input_nc, output_nc, num_downs, first_ch=64, norm_layer=nn.BatchNorm2d):
-        down = []
-        down.append(nn.Conv2d(input_nc, first_ch, kernel_size=4, stride=2, padding=2 ))
-        
+class MakeEndcoder(nn.Module):
+    def __init__(self, input_dim, output_dim, num_downs, first_ch=64, norm_layer=nn.BatchNorm2d):
+        self.model = []
+        self.model += [Conv2dBlock(input_dim, first_ch, kernel_size=4, stride=2, padding=2 ))]
         
 
         for i in range(num_downs):
             down.append(i)
 
+
+class ResnetBlock():
+    def __init__(self, dim, norm="instance", activation="lrelu", pad_type= "zero"):
+        super(ResnetBlock, self).__init__()
+        model = []
+        model += [Conv2dBlock(dim, dim, 3, 1, 1,  pad_type=pad_type, norm=norm, activation=activation)]
+        
+        model += [Conv2dBlock(dim, dim, 3, 1, 1,  pad_type=pad_type, norm="none", activation=activation)]
+        self.model = nn.Sequential(*model)
+        
+    def forward(self, x):
+        residual = x
+        output = self.model(x)
+        output + residual
+        return out
 
 from torch.nn import functional as F
 
