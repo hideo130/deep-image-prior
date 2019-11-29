@@ -17,6 +17,34 @@ class UNITModel(BaseModel):
         # if self.isTrain and self.opt.lambda_identity > 0.0
         #     visual_names_A.append('idt_A')
         
+    def set_input(self, input):
+        """Unpack input data from the dataloader and perform necessary pre-processing steps.
+        Parameters:
+            input (dict): include the data itself and its metadata information.
+        The option 'direction' can be used to swap domain A and domain B.
+        """
+
+        if self.opt.dataset_mode != 'single':
+            AtoB = self.opt.direction == 'AtoB'
+            self.real_A = input['A' if AtoB else 'B'].to(self.device)
+            self.real_B = input['B' if AtoB else 'A'].to(self.device)
+            self.image_paths = input['A_paths' if AtoB else 'B_paths']
+        else:
+            self.real_A = input['A'].to(self.device)
+            self.image_paths = input['A_paths']
+
+    def forward(self):
+        if self.opt.dataset_mode != "single":
+        else:
+
+    def optimize_parameters(self):
+        pass
+
+    def backward_D_basic(self, netD):
+        pass
+
+    def backward_G(self):
+
 
 
 class UNIT(nn.Module):
