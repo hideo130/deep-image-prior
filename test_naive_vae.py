@@ -53,7 +53,7 @@ if __name__ == "__main__":
     dataset_size = len(dataset_test)    # get the number of images in the dataset.
     print('The number of training images = %d' % dataset_size)
 
-    fig =  plt.figure(figsize=(10, 3))
+    fig = plt.figure(figsize=(10, 3))
     for i, data in enumerate(data_loader):
         data = data[0]
         x = data.to("cuda")
