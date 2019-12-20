@@ -20,20 +20,23 @@ See frequently asked questions at: https://github.com/junyanz/pytorch-CycleGAN-a
 """
 import time
 from options.train_options import TrainOptions
-from data import create_dataset
+# from data import create_dataset
 from models import create_model
 from util.visualizer import Visualizer
 from tqdm import tqdm
+from data.aligned_dataloader import Aligned_dataset
+from torch.utils.data.dataloader import DataLoader
+
 
 if __name__ == '__main__':
     opt = TrainOptions().parse()   # get training options
-    dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
+    # dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
+    dataset = Aligned_dataset(opt)
     dataset_size = len(dataset)    # get the number of images in the dataset.
     print('The number of training images = %d' % dataset_size)
 
     model = create_model(opt)      # create a model given opt.model and other options
     model.setup(opt)               # regular setup: load and print networks; create schedulers
-    print("huga")
     visualizer = Visualizer(opt)   # create a visualizer that display/save images and plots
     total_iters = 0                # the total number of training iterations
     is_test = False
@@ -42,13 +45,19 @@ if __name__ == '__main__':
         print('test中　途中で終了します!!!')
         import sys
         sys.exit(0)
- 
+    dataloader = DataLoader(
+        dataset,
+        num_workers=opt.num_threads,
+        batch_size=opt.batch_size,
+        shuffle=True,
+        drop_last=True
+    )
     for epoch in tqdm(range(opt.epoch_count, opt.niter + opt.niter_decay + 1)):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
         epoch_start_time = time.time()  # timer for entire epoch
         iter_data_time = time.time()    # timer for data loading per iteration
         epoch_iter = 0                  # the number of training iterations in current epoch, reset to 0 every epoch
 
-        for i, data in enumerate(tqdm(dataset)):  # inner loop within one epoch
+        for i, data in enumerate(tqdm(dataloader)):  # inner loop within one epoch
             iter_start_time = time.time()  # timer for computation per iteration
             if total_iters % opt.print_freq == 0:
                 t_data = iter_start_time - iter_data_time
@@ -56,11 +65,9 @@ if __name__ == '__main__':
             total_iters += opt.batch_size
             epoch_iter += opt.batch_size
             model.set_input(data)         # unpack data from dataset and apply preprocessing
-            if opt.model != "dec_unet":
-                model.optimize_parameters()   # calculate loss functions, get gradients, update network weights
-            else:
-                model.optimize_parameters(int(epoch))
+            model.optimize_parameters()   # calculate loss functions, get gradients, update network weights
             model.append_loss_during_epoch()
+
             if total_iters % opt.display_freq == 0:   # display images on visdom and save images to a HTML file
                 save_result = total_iters % opt.update_html_freq == 0
                 model.compute_visuals()
@@ -70,8 +77,6 @@ if __name__ == '__main__':
                 losses = model.get_current_losses()
                 t_comp = (time.time() - iter_start_time) / opt.batch_size
                 visualizer.print_current_losses(epoch, epoch_iter, losses, t_comp, t_data)
-                if opt.display_id > 0:
-                    visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, losses)
 
             if total_iters % opt.save_latest_freq == 0:   # cache our latest model every <save_latest_freq> iterations
                 print('saving the latest model (epoch %d, total_iters %d)' % (epoch, total_iters))
@@ -86,7 +91,7 @@ if __name__ == '__main__':
             print('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
             # model.save_networks('latest')
             # model.save_networks(epoch)
-            model.save('latest')
+            # model.save('latest')
             model.save(epoch)
 
         print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))        

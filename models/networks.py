@@ -89,7 +89,8 @@ def init_weights(net, init_type='normal', init_gain=0.02):
     """
     def init_func(m):  # define the initialization function
         classname = m.__class__.__name__
-        if hasattr(m, 'weight') and (classname.find('Conv') != -1 or classname.find('Linear') != -1):
+        if hasattr(m, 'weight') and (classname.find('Conv') == 0 or classname.find('Linear') == 0):
+            # print(classname)
             if init_type == 'normal':
                 init.normal_(m.weight.data, 0.0, init_gain)
             elif init_type == 'xavier':
@@ -100,6 +101,7 @@ def init_weights(net, init_type='normal', init_gain=0.02):
                 init.orthogonal_(m.weight.data, gain=init_gain)
             else:
                 raise NotImplementedError(
+                    "init_type%s init_gain=%d" %(init_type, init_gain) + "\n"+     
                     'initialization method [%s] is not implemented' % init_type)
             if hasattr(m, 'bias') and m.bias is not None:
                 init.constant_(m.bias.data, 0.0)
@@ -107,9 +109,8 @@ def init_weights(net, init_type='normal', init_gain=0.02):
         elif classname.find('BatchNorm2d') != -1:
             init.normal_(m.weight.data, 1.0, init_gain)
             init.constant_(m.bias.data, 0.0)
-
     print('initialize network with %s' % init_type)
-    net.apply(init_func(init_type))  # apply the initialization function <init_func>
+    net.apply(init_func)  # apply the initialization function <init_func>
 
 
 def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
@@ -125,9 +126,18 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
     if len(gpu_ids) > 0:
         assert(torch.cuda.is_available())
         # net.to(gpu_ids[0])
-        net.cuda(gpu_ids[0])
-        net = torch.nn.DataParallel(net, gpu_ids)  # multi-GPUs
-    init_weights(net, init_type, init_gain=init_gain)
+        # net.cuda(gpu_ids[0])
+        use_FP16 = False
+        if use_FP16:
+            import apex
+            net = apex.parallel.DistributedDataParallel(net)
+        else:
+            net = torch.nn.DataParallel(net)  # multi-GPUs
+    # print(net)
+    print("Let's use", torch.cuda.device_count(), "GPUs!")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    net.to(device)
+    init_weights(net, init_type, init_gain=init_gain)    
     # net.apply(weights_init)
     return net
 
@@ -184,7 +194,7 @@ def define_G(input_nc, output_nc, ngf, netG, norm='batch', use_dropout=False, in
     else:
         raise NotImplementedError(
             'Generator model name [%s] is not recognized' % netG)
-    print(net)
+    # print(net)
     return init_net(net, init_type, init_gain, gpu_ids)
 
 
@@ -195,7 +205,11 @@ def define_D(input_nc, ndf, n_layers_D, norm='instance', use_sigmoid=False, num_
     # print(netD)
     if len(gpu_ids) > 0:
         assert(torch.cuda.is_available())
-        netD.cuda(gpu_ids[0])
+        # netD.cuda(gpu_ids[0])
+        netD = torch.nn.DataParallel(netD)  # multi-GPUs
+    print("Let's use", torch.cuda.device_count(), "GPUs!")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    netD.to(device)
     netD.apply(weights_init)
     return netD
 
@@ -249,6 +263,8 @@ class GANLoss(nn.Module):
             target_tensor = self.real_label
         else:
             target_tensor = self.fake_label
+        # print(target_tensor.expand_as(prediction))
+        # print("targe_tensor type ", type(target_tensor.expand_as(prediction)))
         return target_tensor.expand_as(prediction)
 
     def __call__(self, prediction, target_is_real):
@@ -265,10 +281,16 @@ class GANLoss(nn.Module):
             if isinstance(prediction[0], list):
                 loss = 0
                 for input_i in prediction:
+                    # print("input_i", input_i)
+
                     pred = input_i[-1]
+                    # print("pred",pred)
+                    # print("pred type ", type(pred))
                     target_tensor = self.get_target_tensor(
                         pred, target_is_real)
+                    # print("actual loss",self.loss(pred, target_tensor))
                     loss += self.loss(pred, target_tensor)
+                    # print("loss",loss)
             else:
                 target_tensor = self.get_target_tensor(
                     prediction, target_is_real)
@@ -278,6 +300,7 @@ class GANLoss(nn.Module):
                 loss = -prediction.mean()
             else:
                 loss = prediction.mean()
+        # print("final loss", loss)
         return loss
 
 

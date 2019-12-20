@@ -69,6 +69,7 @@ class BaseModel(ABC):
         self.optimizers = []
         self.image_paths = []
         self.ite_to_epoch_dict = dict()
+        print(self.gpu_ids)
 
     @staticmethod
     def modify_commandline_options(parser, is_train):
@@ -298,7 +299,11 @@ class BaseModel(ABC):
         print('---------- Networks initialized -------------')
         for name in self.model_names:
             if isinstance(name, str):
-                net = getattr(self, 'net' + name)
+                
+                if self.opt.model == "unit" and name == "unit":
+                    net = getattr(self, "unit")
+                else:
+                    net = getattr(self, 'net' + name)
                 num_params = 0
                 for param in net.parameters():
                     num_params += param.numel()

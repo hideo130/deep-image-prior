@@ -3,7 +3,7 @@ from .unit import UNIT
 from . import networks
 import torch
 import itertools
-
+from apex import amp
 
 class UnitModel(BaseModel):
 
@@ -48,6 +48,11 @@ class UnitModel(BaseModel):
                 self.netUnit.parameters(), lr=opt.lr, betas=(opt.beta1, 0.999))
             self.optimizer_D = torch.optim.Adam(itertools.chain(self.netD_A.parameters(
             ), self.netD_B.parameters()), lr=opt.lr, betas=(opt.beta1, 0.999))
+            use_FP16 = False
+            if use_FP16:
+                self.netUnit, self.optimizer_G = amp.initialize(self.netUnit, self.optimizer_G, opt_level="01")
+                D_list, self.optimizer_G = amp.initialize([self.netD_A, self.netD_B], self.optimizer_D, opt_level="01")
+                self.netD_A, self.netD_B = D_list[0], D_list[1]
             self.optimizers.append(self.optimizer_G)
             self.optimizers.append(self.optimizer_D)
 
