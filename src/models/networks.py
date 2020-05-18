@@ -101,7 +101,7 @@ def init_weights(net, init_type='normal', init_gain=0.02):
                 init.orthogonal_(m.weight.data, gain=init_gain)
             else:
                 raise NotImplementedError(
-                    "init_type%s init_gain=%d" %(init_type, init_gain) + "\n"+     
+                    "init_type%s init_gain=%d" % (init_type, init_gain) + "\n" +
                     'initialization method [%s] is not implemented' % init_type)
             if hasattr(m, 'bias') and m.bias is not None:
                 init.constant_(m.bias.data, 0.0)
@@ -123,7 +123,7 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
 
     Return an initialized network.
     """
-    if len(gpu_ids) > 0:
+    if len(gpu_ids) > 1:
         assert(torch.cuda.is_available())
         # net.to(gpu_ids[0])
         # net.cuda(gpu_ids[0])
@@ -137,7 +137,7 @@ def init_net(net, init_type='normal', init_gain=0.02, gpu_ids=[]):
     print("Let's use", torch.cuda.device_count(), "GPUs!")
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     net.to(device)
-    init_weights(net, init_type, init_gain=init_gain)    
+    init_weights(net, init_type, init_gain=init_gain)
     # net.apply(weights_init)
     return net
 
@@ -559,7 +559,7 @@ class MultiscaleDiscriminator(nn.Module):
                 input_nc, ndf, n_layers, norm_layer, use_sigmoid, getIntermFeat)
             if getIntermFeat:
                 for j in range(n_layers + 2):
-                    setattr(self, 'scale' + str(i) + '_layer' + 
+                    setattr(self, 'scale' + str(i) + '_layer' +
                             str(j), getattr(netD, 'model' + str(j)))
             else:
 
@@ -794,6 +794,3 @@ class NLayerDiscriminator(nn.Module):
             return res[1:]
         else:
             return self.model(input)
-
-
-

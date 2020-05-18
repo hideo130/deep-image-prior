@@ -1,93 +1,112 @@
-"""General-purpose training script for image-to-image translation.
-
-This script works for various models (with option '--model': e.g., pix2pix, cyclegan, colorization) and
-different datasets (with option '--dataset_mode': e.g., aligned, unaligned, `single, colorization).
-You need to specify the dataset ('--dataroot'), experiment name ('--name'), and model ('--model').
-
-It first creates model, dataset, and visualizer given the option.
-It then does standard network training. During the training, it also visualize/save the images, print/save the loss plot, and save models.
-The script supports continue/resume training. Use '--continue_train' to resume your previous training.
-
-Example:
-    Train a CycleGAN model:
-        python train.py --dataroot ./datasets/maps --name maps_cyclegan --model cycle_gan
-    Train a pix2pix model:
-        python train.py --dataroot ./datasets/facades --name facades_pix2pix --model pix2pix --direction BtoA
-
-See options/base_options.py and options/train_options.py for more training options.
-See training and test tips at: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/docs/tips.md
-See frequently asked questions at: https://github.com/junyanz/pytorch-CycleGAN-and-pix2pix/blob/master/docs/qa.md
-"""
 import time
-from options.train_options import TrainOptions
-from data import create_dataset
-from models import create_model
-from util.visualizer import Visualizer
-from tqdm import tqdm
+from pathlib import Path
+
+import cv2
+import hydra
+import numpy as np
+import torch
+from hydra import utils
+from skimage.external.tifffile import imread
+from torchsummary import summary
+from torchvision import transforms
+
+from models.dip import DIP
+from util.print_loss import print_losses
+from util.tiff_to_rgb_with_torch import Tiff2rgb
+from util.util import get_logger
+
+
+@hydra.main(config_path='../configs/config.yaml')
+def train(cfg):
+    logger = get_logger("./log/")
+    # lossutil = LossUtil("./log/")
+    logger.info(cfg)
+    ROOT = Path(utils.get_original_cwd()).parent
+    print(ROOT)
+    data_path = ROOT.joinpath("datasets/hsimg/data.tiff")
+    himg = imread(str(data_path))
+    himg = himg / 2**16
+    # 分光画像の範囲を光源の範囲に制限
+    himg = himg[:, :, :44]
+    himg = np.where(himg < 0, 0, himg)
+    nhimg = np.empty((512, 512, himg.shape[2]))
+    for i in range(himg.shape[2]):
+        logger.info("resize %d channel..." % i)
+        ch = himg[:, :, i]
+        nhimg[:, :, i] = cv2.resize(
+            255 * ch, (512, 512), interpolation=cv2.INTER_LANCZOS4)
+        logger.info("resize  %d channel... done!" % i)
+    himg = nhimg / 255
+    transform = transforms.Compose([transforms.ToTensor()])
+    himg = transform(himg)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    himg = himg[None, :].float().to(device)
+    # himg = himg[None, :].to(device)
+    logger.info(himg.shape)
+    logger.info(himg.dtype)
+    np.random.seed(cfg.base_options.seed)
+    torch.manual_seed(cfg.base_options.seed)
+    torch.cuda.manual_seed_all(cfg.base_options.seed)
+    torch.backends.cudnn.benchmark = False
+
+    # 実装する
+    # raw_img, mask = make_mask(cfg, himg)
+    mask = None
+    model = DIP(cfg, himg, mask)    # net = model().to(device)
+    logger.info(model.generator)
+
+    # exit(0)
+    dist_path = ROOT.joinpath("datasets/csvs/D65.csv")
+    cmf_path = ROOT.joinpath("datasets/csvs/CIE1964-10deg-XYZ.csv")
+    tiff2rgb = Tiff2rgb(dist_path, cmf_path)
+    if cfg.base_options.debugging:
+        summary(model.generator, (1, 512, 512))
+        # summary(model.generator, (3, 256, 256))
+        print('デバッグ中　途中で終了します!!!')
+        exit(0)
+
+    # input_noise = torch.randn(1, 1, 512, 512, dtype=torch.float64, device=device)
+    input_noise = torch.randn(1, 1, 512, 512, device=device)
+
+    logger.info(input_noise.dtype)
+    for epoch in range(cfg.base_options.epochs):
+        if epoch % cfg.base_options.print_freq == 0:
+            epoch_start_time = time.time()
+
+        if not cfg.base_options.do_fix_noise:
+            input_noise = torch.randn(
+                1, 1, 512, 512, dtype=torch.float64, device=device)
+        model.forward(input_noise)
+        logger.info(model.gimg.shape)
+        logger.info(model.gimg.dtype)
+        model.optimize_parameters()
+        # model.update_learning_rate()
+        losses = model.get_current_losses()
+
+        if epoch % cfg.base_options.print_freq == 0:
+            num = cfg.base_options.print_freq
+            t1 = (time.time() - epoch_start_time)
+            t2 = float(t1) / num
+            print("%dエポックの所要時間%.3f 平均時間%.3f" % (num, t1, t2))
+            print_losses(epoch, losses)
+
+        if epoch % cfg.base_options.save_model_freq == 0:
+            model.save_networks(epoch)
+            model.save_losses()
+        if epoch % cfg.base_options.save_img_freq == 0:
+            new_img = model.gimg.detach()[0]
+            # CHW -> HWC
+            new_img = new_img.permute(1, 2, 0)
+            print(new_img.shape, new_img.device, new_img.dtype)
+            img = tiff2rgb.tiff_to_rgb(new_img)
+            result_dir = Path("./result_imgs/")
+            if not result_dir.exists():
+                Path(result_dir).mkdir(parents=True)
+            img.save(result_dir.joinpath("%d.png" % epoch))
+
+    model.save_networks()
+    model.save_losses()
+
 
 if __name__ == '__main__':
-    opt = TrainOptions().parse()   # get training options
-    dataset = create_dataset(opt)  # create a dataset given opt.dataset_mode and other options
-    dataset_size = len(dataset)    # get the number of images in the dataset.
-    print('The number of training images = %d' % dataset_size)
-
-    model = create_model(opt)      # create a model given opt.model and other options
-    model.setup(opt)               # regular setup: load and print networks; create schedulers
-    print("huga")
-    visualizer = Visualizer(opt)   # create a visualizer that display/save images and plots
-    total_iters = 0                # the total number of training iterations
-    is_test = False
-    if is_test:
-        # print(model.netG)
-        print('test中　途中で終了します!!!')
-        import sys
-        sys.exit(0)
- 
-    for epoch in tqdm(range(opt.epoch_count, opt.niter + opt.niter_decay + 1)):    # outer loop for different epochs; we save the model by <epoch_count>, <epoch_count>+<save_latest_freq>
-        epoch_start_time = time.time()  # timer for entire epoch
-        iter_data_time = time.time()    # timer for data loading per iteration
-        epoch_iter = 0                  # the number of training iterations in current epoch, reset to 0 every epoch
-
-        for i, data in enumerate(tqdm(dataset)):  # inner loop within one epoch
-            iter_start_time = time.time()  # timer for computation per iteration
-            if total_iters % opt.print_freq == 0:
-                t_data = iter_start_time - iter_data_time
-            visualizer.reset()
-            total_iters += opt.batch_size
-            epoch_iter += opt.batch_size
-            model.set_input(data)         # unpack data from dataset and apply preprocessing
-            if opt.model != "dec_unet":
-                model.optimize_parameters()   # calculate loss functions, get gradients, update network weights
-            else:
-                model.optimize_parameters(int(epoch))
-            model.append_loss_during_epoch()
-            if total_iters % opt.display_freq == 0:   # display images on visdom and save images to a HTML file
-                save_result = total_iters % opt.update_html_freq == 0
-                model.compute_visuals()
-                visualizer.display_current_results(model.get_current_visuals(), epoch, save_result)
-
-            if total_iters % opt.print_freq == 0:    # print training losses and save logging information to the disk
-                losses = model.get_current_losses()
-                t_comp = (time.time() - iter_start_time) / opt.batch_size
-                visualizer.print_current_losses(epoch, epoch_iter, losses, t_comp, t_data)
-                if opt.display_id > 0:
-                    visualizer.plot_current_losses(epoch, float(epoch_iter) / dataset_size, losses)
-
-            if total_iters % opt.save_latest_freq == 0:   # cache our latest model every <save_latest_freq> iterations
-                print('saving the latest model (epoch %d, total_iters %d)' % (epoch, total_iters))
-                save_suffix = 'iter_%d' % total_iters if opt.save_by_iter else 'latest'
-                # model.save_networks(save_suffix)
-                model.save(save_suffix)
-            # break
-
-            iter_data_time = time.time()
-        model.concat_and_save_loss_end_epoch(epoch)
-        if epoch % opt.save_epoch_freq == 0:              # cache our model every <save_epoch_freq> epochs
-            print('saving the model at the end of epoch %d, iters %d' % (epoch, total_iters))
-            # model.save_networks('latest')
-            # model.save_networks(epoch)
-            model.save('latest')
-            model.save(epoch)
-
-        print('End of epoch %d / %d \t Time Taken: %d sec' % (epoch, opt.niter + opt.niter_decay, time.time() - epoch_start_time))        
-        model.update_learning_rate()                     # update learning rates at the end of every epoch.
+    train()

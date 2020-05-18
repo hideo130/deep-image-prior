@@ -4,6 +4,28 @@ import torch
 import numpy as np
 from PIL import Image
 import os
+from logging import getLogger, StreamHandler, DEBUG, basicConfig, Formatter, INFO
+from pathlib import Path
+import logzero
+
+
+def setup_logger(log_filename):
+    format_str = '%(asctime)s %(levelname)s %(message)s'
+    basicConfig(filename=log_filename, level=DEBUG, format=format_str)
+    stream_handler = StreamHandler()
+    stream_handler.setFormatter(Formatter(format_str))
+    getLogger().addHandler(stream_handler)
+
+
+def get_logger(log_dir, loglevel=INFO):
+    from logzero import logger
+    # format_str = '%(asctime)s %(levelname)s %(message)s'
+    if not Path(log_dir).exists():
+        Path(log_dir).mkdir(parents=True)
+    logzero.loglevel(loglevel)
+    logzero.logfile(log_dir + '/log.txt')
+
+    return logger
 
 
 def tensor2im(input_image, imtype=np.uint8):
