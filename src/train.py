@@ -97,7 +97,7 @@ def train(cfg):
             new_img = model.gimg.detach()[0]
             # CHW -> HWC
             new_img = new_img.permute(1, 2, 0)
-            print(new_img.shape, new_img.device, new_img.dtype)
+            # print(new_img.shape, new_img.device, new_img.dtype)
             img = tiff2rgb.tiff_to_rgb(new_img)
             result_dir = Path("./result_imgs/")
             if not result_dir.exists():
