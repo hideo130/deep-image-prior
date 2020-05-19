@@ -4,3 +4,6 @@ checkpoints/
 *.pyc
 util/*png
 .vscode/*
+datasets/hsimg/*tiff
+!datasets/hsimg/.gitkeep
+outputs/
