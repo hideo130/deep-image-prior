@@ -55,7 +55,7 @@ class Tiff2rgb():
 
         rgb_img = torch.einsum("whc, mc -> whm", XYZ, xyz_to_srgb)
 
-        rgb_img = torch.where(rgb_img >= 0, rgb_img, torch.tensor([0.]))
+        rgb_img = torch.where(rgb_img >= 0, rgb_img, torch.tensor([0.], device=self.device))
         if self.flag_const_100:
             # HSI画像配布元と同じガンマ補正（ガンマ=0.6）をしている
             rgb_img = torch.pow(rgb_img/255, 0.6) * 255
