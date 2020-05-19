@@ -77,8 +77,8 @@ def train(cfg):
             input_noise = torch.randn(
                 1, 1, 512, 512, dtype=torch.float64, device=device)
         model.forward(input_noise)
-        logger.info(model.gimg.shape)
-        logger.info(model.gimg.dtype)
+        # logger.info(model.gimg.shape)
+        # logger.info(model.gimg.dtype)
         model.optimize_parameters()
         # model.update_learning_rate()
         losses = model.get_current_losses()
@@ -104,7 +104,7 @@ def train(cfg):
                 Path(result_dir).mkdir(parents=True)
             img.save(result_dir.joinpath("%d.png" % epoch))
 
-    model.save_networks()
+    model.save_networks("finish")
     model.save_losses()
 
 
