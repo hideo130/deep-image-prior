@@ -14,6 +14,7 @@ from models.dip import DIP
 from util.print_loss import print_losses
 from util.tiff_to_rgb_with_torch import Tiff2rgb
 from util.util import get_logger
+from util.make_video import make_video
 
 
 @hydra.main(config_path='../configs/config.yaml')
@@ -52,7 +53,7 @@ def train(cfg):
     # 実装する
     # raw_img, mask = make_mask(cfg, himg)
     mask = None
-    model = DIP(cfg, himg, mask)    # net = model().to(device)
+    model = DIP(cfg, himg, mask)
     logger.info(model.generator)
 
     # exit(0)
@@ -102,10 +103,16 @@ def train(cfg):
             result_dir = Path("./result_imgs/")
             if not result_dir.exists():
                 Path(result_dir).mkdir(parents=True)
-            img.save(result_dir.joinpath("%d.png" % epoch))
+            img.save(result_dir.joinpath("%05d.png" % epoch))
 
     model.save_networks("finish")
     model.save_losses()
+    # 実験結果の動画
+    freq = cfg.base_options.save_img_freq
+    epochs = cfg.base_options.epochs
+    result_imgs = ["./result_imgs/%05d.png" %
+                   (epoch) for epoch in range(epochs) if epoch % freq == 0]
+    make_video("./result_imgs", result_imgs)
 
 
 if __name__ == '__main__':
