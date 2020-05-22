@@ -22,7 +22,8 @@ def train(cfg):
     logger.info(cfg)
     ROOT = Path(utils.get_original_cwd()).parent
     print(ROOT)
-    data_path = ROOT.joinpath("datasets/img/1024-512.png")
+    # data_path = ROOT.joinpath("datasets/img/1024-512.png")
+    data_path = ROOT.joinpath("datasets/img/512-256.png")
     img = np.array(Image.open(data_path), dtype=float)
     img = img / 255
     # sigma = 0.1
@@ -33,7 +34,7 @@ def train(cfg):
     # ターゲット画像を保存
     result_dir = Path("./result_imgs/")
     if not result_dir.exists():
-        Path(result_dir).mkdir(parents=True) 
+        Path(result_dir).mkdir(parents=True)
     tmp = mask*img
     tmp = Image.fromarray(np.uint8(255*tmp))
     tmp.save(result_dir.joinpath("target.png"))
@@ -72,8 +73,8 @@ def train(cfg):
             input_noise = torch.randn(
                 1, 1, 512, 1024, dtype=torch.float64, device=device)
         model.forward(input_noise)
-        logger.info(model.gimg.shape)
-        logger.info(model.gimg.dtype)
+        # logger.info(model.gimg.shape)
+        # logger.info(model.gimg.dtype)
         model.optimize_parameters()
         # model.update_learning_rate()
         losses = model.get_current_losses()

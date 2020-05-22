@@ -22,4 +22,4 @@ optimizer:
 
 hydra:
   run:
-    dir: ../outputs/${image.name}/${models.model_name}-input_nc=${models.input_nc}-epochs=${base_options.epochs}
+    dir: ../outputs/${image.name}/${models.model_name}-epochs=${base_options.epochs}
