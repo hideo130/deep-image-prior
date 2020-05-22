@@ -18,7 +18,7 @@ def make_mask(cfg, img):
     """
     mask = np.ones_like(img, dtype=float)
     # mask[0:160, 290:500, :] = 0
-    img[0:50, 150:230, :] = 255
+    mask[0:50, 150:230, :] = 0
     return mask
 
 
