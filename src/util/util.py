@@ -31,7 +31,7 @@ def get_noisy_img(img, sigma):
     """
     noisy_img = np.clip(
         img + np.random.normal(scale=sigma, size=img.shape), 0, 1)
-    return noisy_img
+    return noisy_img.astype(np.float32)
 
 
 def setup_logger(log_filename):

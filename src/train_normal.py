@@ -26,26 +26,37 @@ def train(cfg):
     data_path = ROOT.joinpath("datasets/img/512-256.png")
     img = np.array(Image.open(data_path), dtype=float)
     img = img / 255
-    # sigma = 0.1
-    # himg = get_noisy_img(himg, sigma)
-    # 実装する
-    mask = make_mask(cfg, img)
 
-    # ターゲット画像を保存
     result_dir = Path("./result_imgs/")
     if not result_dir.exists():
         Path(result_dir).mkdir(parents=True)
-    tmp = mask*img
-    tmp = Image.fromarray(np.uint8(255*tmp))
-    tmp.save(result_dir.joinpath("target.png"))
+
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    logger.info(cfg.base_options.type == "denoise")
+    logger.info("denoise")
+    if cfg.base_options.type == "denoise":
+        sigma = 0.1
+        img = get_noisy_img(img, sigma)
+        mask = None
+        tmp = Image.fromarray(np.uint8(255*img))
+        tmp.save(result_dir.joinpath("target.png"))
+    elif cfg.base_options.type == "inpaint":
+        mask = make_mask(cfg, img)
+        # ターゲット画像の保存
+        tmp = mask*img
+        tmp = Image.fromarray(np.uint8(255*tmp))
+        tmp.save(result_dir.joinpath("target.png"))
+
+        mask = torch.from_numpy(mask)
+        mask = mask[None, :].permute(0, 3, 1, 2).to(device)
+        logger.info(mask.shape)
+    else:
+        raise NotImplementedError(
+            '[%s] is not Implemented' % cfg.base_options.type)
 
     transform = transforms.Compose([transforms.ToTensor()])
     img = transform(img)
-    mask = torch.from_numpy(mask)
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     img = img[None, :].to(device)
-    mask = mask[None, :].permute(0, 3, 1, 2).to(device)
-    logger.info(mask.shape)
     logger.info(img.shape)
     logger.info(img.dtype)
 
@@ -63,8 +74,9 @@ def train(cfg):
         print('デバッグ中　途中で終了します!!!')
         exit(0)
 
-    input_noise = torch.randn(1, 1, 512, 1024, device=device)
+    input_noise = torch.randn(1, 1, img.shape[2], img.shape[3], device=device)
     logger.info(input_noise.dtype)
+    logger.info(input_noise.shape)
     for epoch in range(cfg.base_options.epochs):
         if epoch % cfg.base_options.print_freq == 0:
             epoch_start_time = time.time()

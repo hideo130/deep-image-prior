@@ -10,12 +10,12 @@ base_options:
   seed: 123456789
   debugging: False
   gpu_ids: [1]
-  img_mode: 0
+  type: inpaint
 models:
   model_name: "unet_256"
   input_nc: 1
   ngf: 64
-  norm: 'batch'
+  norm: batch
 optimizer:
   algorithm: adam
   lr: 0.0002
