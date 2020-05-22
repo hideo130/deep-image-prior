@@ -32,15 +32,13 @@ def train(cfg):
         Path(result_dir).mkdir(parents=True)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    logger.info(cfg.base_options.type == "denoise")
-    logger.info("denoise")
     if cfg.base_options.type == "denoise":
         sigma = 0.1
         img = get_noisy_img(img, sigma)
         mask = None
         tmp = Image.fromarray(np.uint8(255*img))
         tmp.save(result_dir.joinpath("target.png"))
-    elif cfg.base_options.type == "inpaint":
+    elif "inpaint" in cfg.base_options.type:
         mask = make_mask(cfg, img)
         # ターゲット画像の保存
         tmp = mask*img
@@ -114,9 +112,11 @@ def train(cfg):
     # 実験結果の動画
     freq = cfg.base_options.save_img_freq
     epochs = cfg.base_options.epochs
+    logger.info("making result img")
     result_imgs = ["./result_imgs/%05d.png" %
                    (epoch) for epoch in range(epochs) if epoch % freq == 0]
-    make_video("./result_imgs", result_imgs)
+    make_video("./", result_imgs, img.shape[2], img.shape[3])
+    logger.info("making result img done!")
 
 
 if __name__ == '__main__':

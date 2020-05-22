@@ -18,7 +18,21 @@ def make_mask(cfg, img):
     """
     mask = np.ones_like(img, dtype=float)
     # mask[0:160, 290:500, :] = 0
-    mask[0:50, 150:230, :] = 0
+    if cfg.base_options.type == "inpaint1":
+        mask[0:50, 150:230, :] = 0
+    elif cfg.base_options.type == "inpaint2":
+        mask[115:125, :, :] = 0
+        mask[:, 315:325, :] = 0
+    else:
+        raise NotImplementedError(
+            'Type [%s] is not Implemented. inpaint1 or inpaint2 is allowed' % cfg.base_options.type)
+    return mask
+
+
+def make_mask2(cfg, img):
+    mask = np.ones_like(img, dtype=float)
+    mask[115:125, :, :] = 0
+    mask[:, 315:325, :] = 0
     return mask
 
 
