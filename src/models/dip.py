@@ -32,7 +32,7 @@ class DIP():
 
     def backward(self):
         if self.mask is not None:
-            self.L2_loss = self.criterion(self.gimg*self.mask, self.raw_img)
+            self.L2_loss = self.criterion(self.mask*self.gimg, self.mask*self.raw_img)
         else:
             self.L2_loss = self.criterion(self.gimg, self.raw_img)
         self.L2_loss.backward()

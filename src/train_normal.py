@@ -1,19 +1,17 @@
 import time
 from pathlib import Path
 
-import cv2
 import hydra
 import numpy as np
 import torch
 from hydra import utils
-from skimage.external.tifffile import imread
 from torchsummary import summary
 from torchvision import transforms
+from PIL import Image
 
 from models.dip import DIP
 from util.print_loss import print_losses
-from util.tiff_to_rgb_with_torch import Tiff2rgb
-from util.util import get_logger, get_noisy_img
+from util.util import get_logger, get_noisy_img, make_mask
 from util.make_video import make_video
 
 
@@ -24,61 +22,47 @@ def train(cfg):
     logger.info(cfg)
     ROOT = Path(utils.get_original_cwd()).parent
     print(ROOT)
-    data_path = ROOT.joinpath("datasets/hsimg/data.tiff")
-    himg = imread(str(data_path))
-    himg = himg / 2**16
-    # 分光画像の範囲を光源の範囲に制限
-    himg = himg[:, :, :44]
-    himg = np.where(himg < 0, 0, himg)
-    nhimg = np.empty((512, 512, himg.shape[2]))
-    for i in range(himg.shape[2]):
-        logger.info("resize %d channel..." % i)
-        ch = himg[:, :, i]
-        nhimg[:, :, i] = cv2.resize(
-            255 * ch, (512, 512), interpolation=cv2.INTER_LANCZOS4)
-        logger.info("resize  %d channel... done!" % i)
-    himg = nhimg / 255
-    sigma = 0.1
-    himg = get_noisy_img(himg, sigma)
+    data_path = ROOT.joinpath("datasets/img/1024-512.png")
+    img = np.array(Image.open(data_path), dtype=float)
+    img = img / 255
+    # sigma = 0.1
+    # himg = get_noisy_img(himg, sigma)
     # 実装する
-    # raw_img, mask = make_mask(cfg, himg)
-
-    mask = None
-
-    transform = transforms.Compose([transforms.ToTensor()])
-    himg = transform(himg)
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    himg = himg[None, :].float().to(device)
-    # himg = himg[None, :].to(device)
-
-    dist_path = ROOT.joinpath("datasets/csvs/D65.csv")
-    cmf_path = ROOT.joinpath("datasets/csvs/CIE1964-10deg-XYZ.csv")
-    tiff2rgb = Tiff2rgb(dist_path, cmf_path)
+    mask = make_mask(cfg, img)
 
     # ターゲット画像を保存
-    img = tiff2rgb.tiff_to_rgb(himg[0].permute(1, 2, 0))
     result_dir = Path("./result_imgs/")
     if not result_dir.exists():
-        Path(result_dir).mkdir(parents=True)
-    img.save(result_dir.joinpath("target.png"))
+        Path(result_dir).mkdir(parents=True) 
+    tmp = mask*img
+    tmp = Image.fromarray(np.uint8(255*tmp))
+    tmp.save(result_dir.joinpath("target.png"))
 
-    logger.info(himg.shape)
-    logger.info(himg.dtype)
+    transform = transforms.Compose([transforms.ToTensor()])
+    img = transform(img)
+    mask = torch.from_numpy(mask)
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    img = img[None, :].to(device)
+    mask = mask[None, :].permute(0, 3, 1, 2).to(device)
+    logger.info(mask.shape)
+    logger.info(img.shape)
+    logger.info(img.dtype)
+
     np.random.seed(cfg.base_options.seed)
     torch.manual_seed(cfg.base_options.seed)
     torch.cuda.manual_seed_all(cfg.base_options.seed)
     torch.backends.cudnn.benchmark = False
 
-    model = DIP(cfg, himg, mask)
+    model = DIP(cfg, img, mask)
     logger.info(model.generator)
 
     if cfg.base_options.debugging:
-        summary(model.generator, (1, 512, 512))
+        summary(model.generator, (1, 1024, 512))
         # summary(model.generator, (3, 256, 256))
         print('デバッグ中　途中で終了します!!!')
         exit(0)
 
-    input_noise = torch.randn(1, 1, 512, 512, device=device)
+    input_noise = torch.randn(1, 1, 512, 1024, device=device)
     logger.info(input_noise.dtype)
     for epoch in range(cfg.base_options.epochs):
         if epoch % cfg.base_options.print_freq == 0:
@@ -86,10 +70,10 @@ def train(cfg):
 
         if not cfg.base_options.do_fix_noise:
             input_noise = torch.randn(
-                1, 1, 512, 512, dtype=torch.float64, device=device)
+                1, 1, 512, 1024, dtype=torch.float64, device=device)
         model.forward(input_noise)
-        # logger.info(model.gimg.shape)
-        # logger.info(model.gimg.dtype)
+        logger.info(model.gimg.shape)
+        logger.info(model.gimg.dtype)
         model.optimize_parameters()
         # model.update_learning_rate()
         losses = model.get_current_losses()
@@ -107,10 +91,10 @@ def train(cfg):
         if epoch % cfg.base_options.save_img_freq == 0:
             new_img = model.gimg.detach()[0]
             # CHW -> HWC
-            new_img = new_img.permute(1, 2, 0)
+            new_img = new_img.permute(1, 2, 0).cpu().float().numpy()
             # print(new_img.shape, new_img.device, new_img.dtype)
-            img = tiff2rgb.tiff_to_rgb(new_img)
-            img.save(result_dir.joinpath("%05d.png" % epoch))
+            new_img = Image.fromarray(np.uint8(255*new_img))
+            new_img.save(result_dir.joinpath("%05d.png" % epoch))
 
     model.save_networks("finish")
     model.save_losses()

@@ -4,22 +4,22 @@ defaults:
 base_options:
   print_freq: 10
   epochs: 20000
-  save_model_freq: 100
+  save_model_freq: 1000000
   save_img_freq: 10
   do_fix_noise: True
   seed: 123456789
   debugging: False
   gpu_ids: [1]
+  img_mode: 0
 models:
   model_name: "unet_256"
   input_nc: 1
   ngf: 64
   norm: 'batch'
-  output_nc: 44
 optimizer:
   algorithm: adam
   lr: 0.0002
 
 hydra:
   run:
-    dir: ../outputs/${models.model_name}-input_nc=${models.input_nc}-epochs=${base_options.epochs}
+    dir: ../outputs/${image.name}/${models.model_name}-input_nc=${models.input_nc}-epochs=${base_options.epochs}
