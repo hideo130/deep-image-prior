@@ -115,7 +115,7 @@ def train(cfg):
     logger.info("making result img")
     result_imgs = ["./result_imgs/%05d.png" %
                    (epoch) for epoch in range(epochs) if epoch % freq == 0]
-    make_video("./", result_imgs, img.shape[2], img.shape[3])
+    make_video("./", result_imgs, img.shape[3], img.shape[2])
     logger.info("making result img done!")
 
 
