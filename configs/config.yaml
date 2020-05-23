@@ -3,7 +3,7 @@ defaults:
 
 base_options:
   print_freq: 10
-  epochs: 20000
+  epochs: 500
   save_model_freq: 1000000
   save_img_freq: 10
   do_fix_noise: True

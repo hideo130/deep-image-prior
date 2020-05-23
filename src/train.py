@@ -43,7 +43,7 @@ def train(cfg):
         sigma = 0.1
         himg = get_noisy_img(himg, sigma)
         mask = None
-    elif cfg.image.type == "inpaint":
+    elif "inpaint" in cfg.image.type:
         mask = make_mask_himg(cfg, himg)
         logger.info(mask.dtype)
         mask = torch.from_numpy(mask)
@@ -67,10 +67,9 @@ def train(cfg):
     if cfg.image.type == "denoise":
         img = tiff2rgb.tiff_to_rgb(himg[0].permute(1, 2, 0))
     else:
-
         tmp = himg * mask
-        logger.info(tmp.shape)    
-        logger.info(tmp.dtype)    
+        logger.info(tmp.shape)
+        logger.info(tmp.dtype)
         img = tiff2rgb.tiff_to_rgb(tmp[0].permute(1, 2, 0))
     result_dir = Path("./result_imgs/")
     if not result_dir.exists():

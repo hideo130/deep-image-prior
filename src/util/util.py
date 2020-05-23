@@ -38,14 +38,22 @@ def make_mask(cfg, img):
 
 def make_mask_himg(cfg, img):
     mask = np.ones_like(img, dtype=np.float32)
+    if cfg.image.type == "inpaint1":
+        mask[115:120, :, :] = 0
+        mask[310:315, :, :] = 0
+        mask[180:185, :, :] = 0
 
-    mask[115:120, :, :] = 0
-    mask[310:315, :, :] = 0
-    mask[180:185, :, :] = 0
+        mask[:, 80:85, :] = 0
+        mask[:, 315:320, :] = 0
+        mask[:, 430:435, :] = 0
+    elif cfg.image.type == "inpaint2":
+        mask[115:125, :, :] = 0
+        mask[310:320, :, :] = 0
+        mask[180:190, :, :] = 0
 
-    mask[:, 80:85, :] = 0
-    mask[:, 315:320, :] = 0
-    mask[:, 430:435, :] = 0
+        mask[:, 80:90, :] = 0
+        mask[:, 315:325, :] = 0
+        mask[:, 430:440, :] = 0
     return mask
 
 
