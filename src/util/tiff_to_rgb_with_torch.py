@@ -33,7 +33,7 @@ class Tiff2rgb():
         # print(cmf.dtype)
 
         self.nmf_multi_ld = cmf * sd_light_source
-        self.flag_const_100 = True
+        self.flag_const_100 = False
         y = self.nmf_multi_ld[:, 1]
         if self.flag_const_100:
             self.k = 100 / torch.sum(y)
@@ -58,14 +58,12 @@ class Tiff2rgb():
         rgb_img = torch.where(rgb_img >= 0, rgb_img, torch.tensor([0.], device=self.device))
         if self.flag_const_100:
             # HSI画像配布元と同じガンマ補正（ガンマ=0.6）をしている
-            rgb_img = torch.pow(rgb_img/255, 0.6) * 255
+            rgb_img = torch.pow(rgb_img/255, 0.6)
         else:
             # XYZからsRGBへのレンダリングに乗っているガンマ補正
             rgb_img = torch.where(rgb_img <= 0.0031308, 12.92 *
                                   rgb_img, 1.055 * torch.pow(rgb_img, 1/2.4) - 0.055)
-
-        if self.flag_const_100:
-            img = Image.fromarray(np.uint8(rgb_img.cpu().float().numpy()))
-        else:
-            img = Image.fromarray(np.uint8(255*rgb_img.cpu().float().numpy()))
+        np_rgb_img = rgb_img.cpu().float().numpy()
+        np_rgb_img = np.clip(np_rgb_img, 0, 1)
+        img = Image.fromarray(np.uint8(np_rgb_img*255))
         return img
