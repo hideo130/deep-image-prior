@@ -10,7 +10,7 @@ base_options:
   seed: 123456789
   debugging: False
   gpu_ids: [1]
-  type: inpaint1
+
 models:
   model_name: "unet_256"
   input_nc: 1

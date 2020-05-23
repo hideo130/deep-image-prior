@@ -32,13 +32,13 @@ def train(cfg):
         Path(result_dir).mkdir(parents=True)
 
     device = 'cuda' if torch.cuda.is_available() else 'cpu'
-    if cfg.base_options.type == "denoise":
+    if cfg.image.type == "denoise":
         sigma = 0.1
         img = get_noisy_img(img, sigma)
         mask = None
         tmp = Image.fromarray(np.uint8(255*img))
         tmp.save(result_dir.joinpath("target.png"))
-    elif "inpaint" in cfg.base_options.type:
+    elif "inpaint" in cfg.image.type:
         mask = make_mask(cfg, img)
         # ターゲット画像の保存
         tmp = mask*img
@@ -50,7 +50,7 @@ def train(cfg):
         logger.info(mask.shape)
     else:
         raise NotImplementedError(
-            '[%s] is not Implemented' % cfg.base_options.type)
+            '[%s] is not Implemented' % cfg.image.type)
 
     transform = transforms.Compose([transforms.ToTensor()])
     img = transform(img)
