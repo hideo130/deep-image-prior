@@ -112,11 +112,11 @@ def train(cfg):
     # 実験結果の動画
     freq = cfg.base_options.save_img_freq
     epochs = cfg.base_options.epochs
-    logger.info("making result img")
+    logger.info("making result video")
     result_imgs = ["./result_imgs/%05d.png" %
                    (epoch) for epoch in range(epochs) if epoch % freq == 0]
     make_video("./", result_imgs, img.shape[3], img.shape[2])
-    logger.info("making result img done!")
+    logger.info("making result video done!")
 
 
 if __name__ == '__main__':
