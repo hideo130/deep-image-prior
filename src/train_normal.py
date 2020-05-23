@@ -81,7 +81,7 @@ def train(cfg):
 
         if not cfg.base_options.do_fix_noise:
             input_noise = torch.randn(
-                1, 1, img.shape[2], img.shape[3], dtype=torch.float64, device=device)
+                1, 1, img.shape[2], img.shape[3], dtype=torch.float32, device=device)
         model.forward(input_noise)
         # logger.info(model.gimg.shape)
         # logger.info(model.gimg.dtype)
