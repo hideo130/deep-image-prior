@@ -16,7 +16,7 @@ def make_mask(cfg, img):
         cfg(hydra):
         img (float): numpy型の画像
     """
-    mask = np.ones_like(img, dtype=float)
+    mask = np.ones_like(img, dtype=np.float32)
     # mask[0:160, 290:500, :] = 0
     if cfg.image.type == "inpaint1":
         mask[0:50, 150:230, :] = 0
@@ -37,7 +37,7 @@ def make_mask(cfg, img):
 
 
 def make_mask_himg(cfg, img):
-    mask = np.ones_like(img, dtype=float)
+    mask = np.ones_like(img, dtype=np.float32)
 
     mask[115:120, :, :] = 0
     mask[310:315, :, :] = 0

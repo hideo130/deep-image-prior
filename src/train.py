@@ -45,9 +45,12 @@ def train(cfg):
         mask = None
     elif cfg.image.type == "inpaint":
         mask = make_mask_himg(cfg, himg)
+        logger.info(mask.dtype)
         mask = torch.from_numpy(mask)
         mask = mask[None, :].permute(0, 3, 1, 2).to(device)
         logger.info(mask.shape)
+        logger.info(mask.dtype)
+
     else:
         raise NotImplementedError(
             '[%s] is not Implemented' % cfg.image.type)
@@ -64,7 +67,10 @@ def train(cfg):
     if cfg.image.type == "denoise":
         img = tiff2rgb.tiff_to_rgb(himg[0].permute(1, 2, 0))
     else:
+
         tmp = himg * mask
+        logger.info(tmp.shape)    
+        logger.info(tmp.dtype)    
         img = tiff2rgb.tiff_to_rgb(tmp[0].permute(1, 2, 0))
     result_dir = Path("./result_imgs/")
     if not result_dir.exists():
