@@ -24,13 +24,13 @@ def make_mask(cfg, img):
         mask[115:125, :, :] = 0
         mask[:, 315:325, :] = 0
     elif cfg.base_options.type == "inpaint3":
-        mask[115:120, :, :] = 255
-        mask[180:185, :, :] = 255
-        mask[180:185, :, :] = 255
+        mask[115:120, :, :] = 0
+        mask[180:185, :, :] = 0
+        mask[180:185, :, :] = 0
 
-        mask[:, 80:85, :] = 255
-        mask[:, 315:320, :] = 255
-        mask[:, 430:435, :] = 255
+        mask[:, 80:85, :] = 0
+        mask[:, 315:320, :] = 0
+        mask[:, 430:435, :] = 0
     else:
         raise NotImplementedError(
             'Type [%s] is not Implemented. inpaint1 or inpaint2 is allowed' % cfg.base_options.type)
