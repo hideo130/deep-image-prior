@@ -36,6 +36,19 @@ def make_mask(cfg, img):
     return mask
 
 
+def make_mask_himg(cfg, img):
+    mask = np.ones_like(img, dtype=float)
+
+    mask[115:120, :, :] = 0
+    mask[310:315, :, :] = 0
+    mask[180:185, :, :] = 0
+
+    mask[:, 80:85, :] = 0
+    mask[:, 315:320, :] = 0
+    mask[:, 430:435, :] = 0
+    return mask
+
+
 def get_noisy_img(img, sigma):
     """画像にガウシアンノイズを加える.
 

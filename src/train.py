@@ -13,7 +13,7 @@ from torchvision import transforms
 from models.dip import DIP
 from util.print_loss import print_losses
 from util.tiff_to_rgb_with_torch import Tiff2rgb
-from util.util import get_logger, get_noisy_img
+from util.util import get_logger, get_noisy_img, make_mask_himg
 from util.make_video import make_video
 
 
@@ -38,25 +38,34 @@ def train(cfg):
             255 * ch, (512, 512), interpolation=cv2.INTER_LANCZOS4)
         logger.info("resize  %d channel... done!" % i)
     himg = nhimg / 255
-    sigma = 0.1
-    himg = get_noisy_img(himg, sigma)
-    # 実装する
-    # raw_img, mask = make_mask(cfg, himg)
-
-    mask = None
+    device = 'cuda' if torch.cuda.is_available() else 'cpu'
+    if cfg.image.type == "denoise":
+        sigma = 0.1
+        himg = get_noisy_img(himg, sigma)
+        mask = None
+    elif cfg.image.type == "inpaint":
+        mask = make_mask_himg(cfg, himg)
+        mask = torch.from_numpy(mask)
+        mask = mask[None, :].permute(0, 3, 1, 2).to(device)
+        logger.info(mask.shape)
+    else:
+        raise NotImplementedError(
+            '[%s] is not Implemented' % cfg.image.type)
 
     transform = transforms.Compose([transforms.ToTensor()])
     himg = transform(himg)
-    device = 'cuda' if torch.cuda.is_available() else 'cpu'
     himg = himg[None, :].float().to(device)
-    # himg = himg[None, :].to(device)
 
     dist_path = ROOT.joinpath("datasets/csvs/D65.csv")
     cmf_path = ROOT.joinpath("datasets/csvs/CIE1964-10deg-XYZ.csv")
     tiff2rgb = Tiff2rgb(dist_path, cmf_path)
 
     # ターゲット画像を保存
-    img = tiff2rgb.tiff_to_rgb(himg[0].permute(1, 2, 0))
+    if cfg.image.type == "denoise":
+        img = tiff2rgb.tiff_to_rgb(himg[0].permute(1, 2, 0))
+    else:
+        tmp = himg * mask
+        img = tiff2rgb.tiff_to_rgb(tmp[0].permute(1, 2, 0))
     result_dir = Path("./result_imgs/")
     if not result_dir.exists():
         Path(result_dir).mkdir(parents=True)
@@ -78,7 +87,8 @@ def train(cfg):
         print('デバッグ中　途中で終了します!!!')
         exit(0)
 
-    input_noise = torch.randn(1, 1, 512, 512, device=device)
+    input_noise = torch.randn(
+        1, 1, himg.shape[2], himg.shape[3], device=device)
     logger.info(input_noise.dtype)
     for epoch in range(cfg.base_options.epochs):
         if epoch % cfg.base_options.print_freq == 0:
@@ -86,7 +96,7 @@ def train(cfg):
 
         if not cfg.base_options.do_fix_noise:
             input_noise = torch.randn(
-                1, 1, 512, 512, dtype=torch.float64, device=device)
+                1, 1, himg.shape[2], himg.shape[3], dtype=torch.float64, device=device)
         model.forward(input_noise)
         # logger.info(model.gimg.shape)
         # logger.info(model.gimg.dtype)
@@ -119,7 +129,7 @@ def train(cfg):
     epochs = cfg.base_options.epochs
     result_imgs = ["./result_imgs/%05d.png" %
                    (epoch) for epoch in range(epochs) if epoch % freq == 0]
-    make_video("./result_imgs", result_imgs)
+    make_video("./", result_imgs, width=himg.shape[3], height=himg.shape[3])
 
 
 if __name__ == '__main__':
