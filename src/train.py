@@ -116,7 +116,7 @@ def train(cfg):
             print("%dエポックの所要時間%.3f 平均時間%.3f" % (num, t1, t2))
             print_losses(epoch, losses)
 
-        if epoch % cfg.base_options.save_model_freq == 0:
+        if cfg.base_options.save_model_freq != -1 and epoch % cfg.base_options.save_model_freq == 0:
             model.save_networks(epoch)
             model.save_losses()
         if epoch % cfg.base_options.save_img_freq == 0:
@@ -127,7 +127,8 @@ def train(cfg):
             img = tiff2rgb.tiff_to_rgb(new_img)
             img.save(result_dir.joinpath("%05d.png" % epoch))
 
-    model.save_networks("finish")
+    if cfg.base_options.save_model_freq != -1:
+        model.save_networks("finish")
     model.save_losses()
     # 実験結果の動画
     freq = cfg.base_options.save_img_freq

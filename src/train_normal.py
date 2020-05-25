@@ -17,6 +17,9 @@ from util.make_video import make_video
 
 @hydra.main(config_path='../configs/config.yaml')
 def train(cfg):
+    if cfg.image.name != "normal":
+        print("image=imgというオプションをつけてください")
+        exit(0)
     logger = get_logger("./log/")
     # lossutil = LossUtil("./log/")
     logger.info(cfg)
@@ -96,7 +99,7 @@ def train(cfg):
             print("%dエポックの所要時間%.3f 平均時間%.3f" % (num, t1, t2))
             print_losses(epoch, losses)
 
-        if epoch % cfg.base_options.save_model_freq == 0:
+        if cfg.base_options.save_model_freq != -1 and epoch % cfg.base_options.save_model_freq == 0:
             model.save_networks(epoch)
             model.save_losses()
         if epoch % cfg.base_options.save_img_freq == 0:
@@ -107,7 +110,8 @@ def train(cfg):
             new_img = Image.fromarray(np.uint8(255*new_img))
             new_img.save(result_dir.joinpath("%05d.png" % epoch))
 
-    model.save_networks("finish")
+    if cfg.base_options.save_model_freq != -1:
+        model.save_networks("finish")
     model.save_losses()
     # 実験結果の動画
     freq = cfg.base_options.save_img_freq

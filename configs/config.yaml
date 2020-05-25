@@ -4,7 +4,7 @@ defaults:
 base_options:
   print_freq: 10
   epochs: 500
-  save_model_freq: 1000000
+  save_model_freq: -1
   save_img_freq: 10
   do_fix_noise: True
   seed: 123456789

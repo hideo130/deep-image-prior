@@ -54,6 +54,10 @@ def make_mask_himg(cfg, img):
         mask[:, 80:90, :] = 0
         mask[:, 315:325, :] = 0
         mask[:, 430:440, :] = 0
+    else:
+        raise NotImplementedError(
+            'Type [%s] is not Implemented. inpaint1 or inpaint2 is allowed' % cfg.image.type)
+
     return mask
 
 

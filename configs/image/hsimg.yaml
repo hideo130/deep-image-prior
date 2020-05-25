@@ -1,4 +1,4 @@
 image:
   output_nc: 44
   name: hsimg
-  type: inpaint
+  type: inpaint1
