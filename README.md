@@ -75,8 +75,8 @@ deep-image-prior.ipynbをgoogle driveにアップロードし，アプリで開�
 
 
 # リンク
-スペインの大学で公開されているハイパースペクトル画像を利用しています[1]． 
-[1]http://colorimaginglab.ugr.es/pages/Data#__doku_ishihara_spectral_database．
+スペインの大学で公開されているハイパースペクトル画像を利用しています． 
+http://colorimaginglab.ugr.es/pages/Data#__doku_ishihara_spectral_database．
 
 Deep Image Priorの論文とGithubのページです．
 
@@ -84,7 +84,6 @@ Deep Image Priorの論文とGithubのページです．
 https://sites.skoltech.ru/app/data/uploads/sites/25/2018/04/deep_image_prior.pdf
 
 GitHub
-
 https://github.com/DmitryUlyanov/deep-image-prior
 
 また，パラメーター管理のためにHydraを利用しています．
