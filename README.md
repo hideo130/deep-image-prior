@@ -53,7 +53,7 @@ cd src
 python3 train.py image.type=inpaint2 base_options.epochs=1000
 ```
 実行例:ハイパースペクトル画像
-デノイズを試したい場合
+デノイズを試す
 
 ```
 cd src
