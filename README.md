@@ -86,5 +86,5 @@ https://sites.skoltech.ru/app/data/uploads/sites/25/2018/04/deep_image_prior.pdf
 GitHub
 https://github.com/DmitryUlyanov/deep-image-prior
 
-また，パラメーター管理のためにHydraを利用しています．
+また，ハイパーパラメーター管理にHydraを利用しています．
 https://hydra.cc/docs/intro
