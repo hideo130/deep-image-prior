@@ -10,8 +10,9 @@ DIPの論文中では一般画像に対してのみ，試していましたが�
 |![hsi-target](readme_images/hsi-inpaint-target.png)|![hsi-result](readme_images/hsi-inpaint-result.png)|
 |![hsi-target2](readme_images/hsi-inpaint2-target.png)|![hsi-result2](readme_images/hsi-inpaint2-result.png)|
 |![hsi-target3](readme_images/hsi-denoise-target.png)|![hsi-result3](readme_images/hsi-denoise-result.png)|
-CNNの出力はインペインティングで1000epoch（iteration）後，デノイズで460epoch後の
-結果です．上二つがインペインティング，一番下がデノイズの結果です．画像の欠損がなく，滑らかな画像が出力されているのがわかります．カラーチャート上の色の再現は難しいようです．全ての結果でくすんだ色になりました．
+
+CNNの出力はインペインティングで1000epoch（iteration）後，デノイズで460epoch後の結果です．
+上二つがインペインティング，一番下がデノイズの結果です．画像の欠損がなく，滑らかな画像が出力されているのがわかります．カラーチャート上の色の再現は難しいようです．全ての結果でくすんだ色になりました．
 
 
 一般画像の結果です．
