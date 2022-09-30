@@ -1,6 +1,6 @@
 hydra-core==0.11.3
 imageio==2.8.0
-joblib==0.14.1
+joblib==1.2.0
 logzero==1.5.0
 matplotlib==3.2.1
 numpy==1.18.1
