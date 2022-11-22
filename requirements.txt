@@ -7,7 +7,7 @@ numpy==1.18.1
 omegaconf==1.4.1
 opencv-contrib-python==4.2.0.34
 opencv-python-headless==4.2.0.34
-Pillow==7.0.0
+Pillow==9.3.0
 scikit-image==0.16.2
 scikit-learn==0.22.2.post1
 scipy==1.4.1
